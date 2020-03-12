@@ -7,14 +7,13 @@ filename = "ratings.csv"
 filename_small = "ratings_small.csv"
 
 def raw():
-    return pd.read_csv(up.data_raw_dir+filename)
+    return up.raw(filename)
 
 def raw_small():
-    return pd.read_csv(up.data_raw_dir+filename_small)
+    return up.raw(filename_small)
 
 def raw_small_small(nb_rows=100,save=False,nameifsave="ratings_small_small.csv"):
-    dfs = pd.read_csv(up.data_raw_dir+filename_small)
-    dfss = dfs[:nb_rows]
+    dfss = raw_small()[:nb_rows]
     if save:
         dfss.to_csv(up.data_processed_dir+nameifsave)
     return dfss

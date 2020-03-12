@@ -1,12 +1,11 @@
 import pandas as pd
 import src.processing.util_processing as up
-import numpy as np
 import ast
 
 filename = "credits.csv"
 
 def raw() :
-    return pd.read_csv(up.data_raw_dir+filename)
+    return up.raw(filename)
 
 def get_cast_and_crew_by_id(df,id_film=433):
     row = df.loc[df['id']==id_film]
@@ -21,7 +20,7 @@ def raw_small(count=1000, save=False, nameifsave="credits_small.csv"):
     return dfs
 
 if __name__=="__main__":
-    dfss = raw()
+    dfss = raw_small()
     cast,crew = get_cast_and_crew_by_id(dfss)
     #print(dfss.columns)
     #for i,r in dfss.iterrows():
