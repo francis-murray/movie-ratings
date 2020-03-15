@@ -37,3 +37,4 @@ def columns_rating_movieId(df):
 if __name__=="__main__":
     dfss = raw_small_small()
     print(columns_rating_movieId(dfss))
+    print(dfss)
