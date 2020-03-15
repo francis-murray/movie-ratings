@@ -7,7 +7,7 @@ filename = "keywords.csv"
 def raw() :
     return pd.read_csv(up.data_raw_dir+filename)
 
-def raw_small(count=1000, save=False, nameifsave="keywords.small.csv"):
+def raw_small(count=1000, save=False, nameifsave="keywords_small.csv"):
     dfs = raw()[:count]
     if save:
         dfs.to_csv(up.data_processed_dir+filename)

@@ -2,14 +2,13 @@ import pandas as pd
 
 data_processed_dir = "../../data/processed/"
 data_raw_dir = "../../data/raw/"
-
-def raw(filename="",limit=1,all=True):
+def raw(filename="",limit=1,all=True,dtype=None):
     if all:
-        return pd.read_csv(data_raw_dir+filename)
+        return pd.read_csv(data_raw_dir+filename,dtype=dtype)
     else:
-        return pd.read_csv(data_raw_dir+filename)[:limit]
-def processed(filename="",limit=1, all=True):
+        return pd.read_csv(data_raw_dir+filename,dtype=dtype)[:limit]
+def processed(filename="",limit=1, all=True,dtype=None):
     if all:
-        return pd.read_csv(data_processed_dir+filename)
+        return pd.read_csv(data_processed_dir+filename,dtype=dtype)
     else:
-        return pd.read_csv(data_processed_dir+filename)[:limit]
+        return pd.read_csv(data_processed_dir+filename,dtype=dtype)[:limit]
