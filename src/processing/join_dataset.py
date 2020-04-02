@@ -2,9 +2,21 @@ import src.processing.process_credits as pcredits
 import src.processing.process_keywords as pkeywords
 import src.processing.process_movies_metadata as pmoviesmd
 import src.processing.process_ratings as pratings
+import src.processing.util_processing as up
+
 import math
 filename ="joined.csv"
 
+def processed(redo=False):
+    try:
+        if not redo:
+            return up.processed(filename)
+        else :
+            raise Exception
+    except:
+        df=joined()
+        df.to_csv()
+        return df
 def joined():
     dfCredits = pcredits.clean( pcredits.raw_small())
     dfKeywords = pkeywords.clean( pkeywords.raw_small())
@@ -21,8 +33,7 @@ def xy():
     df = joined()
     return df[['revenue','popularity','runtime','vote_count']],df['vote_average']
 if __name__=='__main__':
-    df = joined()
-    #df.to_csv(filename)
+    df = processed()
     print(df.shape)
     print(df.columns)
     print(df)
