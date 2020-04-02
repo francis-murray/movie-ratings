@@ -48,6 +48,9 @@ class SimpleLinearRegression:
         return self.b0 + self.b1 * x
 
     def add_observations(self,x,y):
+        if len(x) != len(y):
+            raise RegressionError('x and y of different len')
+        self.n += len(x)
         self.obs += zip(x,y)
         self.compute_e_and_s()
         self.compute_coefficients()
@@ -56,28 +59,41 @@ class SimpleLinearRegression:
 
 class MultipleLinearRegression:
     def __init__(self,X,Y):
-        print([1]*len(X))
+        if len(X)!=len(Y):
+            raise RegressionError('x and y of different len')
+        self.n = len(X)
+        if self.n>0:
+            self.degree = len(X[0])
+        else:
+            self.degree = -1
         self.X =  np.column_stack(([1]*len(X),np.array(X)))
         self.Y = np.array(Y)
+        self.Ey = 0.
+        self.sse = 0.
+        self.ssr = 0.
+        self.sst = 0.
+        self.r = 0.
         self.coef = None
         self.compute_coef()
 
     def compute_coef(self):
         self.coef = np.linalg.inv(self.X.T.dot(self.X)).dot(self.X.T.dot(self.Y))
+
+    def compute_params(self):
+        self.Ey = sum(self.Y)/self.n
+        self.sse = 0.
+        self.ssr = 0.
+        self.sst = 0.
+        for i in range(self.n):
+            predicted_yi = sum(self.coef * self.X[i])
+            self.sse += (predicted_yi - self.Ey) ** 2
+            self.ssr += (self.Y[i] - predicted_yi) ** 2
+            self.sst += (self.Y[i] - self.Ey) ** 2
     def add_observations(self,X,Y):
         self.X = np.row_stack((self.X,np.column_stack(([1]*len(X),X))))
         self.Y = np.append(self.Y,Y)
-if __name__=='__main__':
-    x = [20,24,28,22,32,28,32,36,41,41]
-    y = [16,18,23,24,28,29,26,31,32,34]
-    rls = SimpleLinearRegression(x,y)
-    print(rls.b0)
-    print(rls.b1)
-    print(rls.predict(2000))
-    xm = [
-        [2768,252,22,324,8760219,438465.0625],
-        [4108,333,29,308,8760195,438374.0625]
-    ]
-    ym = [95,150]#,4,0,0,80,95,20,90,10,10,50,45,60,55,3,33]
-    rsm = MultipleLinearRegression(xm,ym)
-    rsm.add_observations(xm,ym)
+        self.compute_params()
+    def predict(self,X):
+        X = np.append([1],np.array(X))
+        return sum(self.coef*X)
+

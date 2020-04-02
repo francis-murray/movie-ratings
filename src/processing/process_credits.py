@@ -1,4 +1,3 @@
-import pandas as pd
 import src.processing.util_processing as up
 import ast
 
@@ -31,9 +30,8 @@ def clean(df):
 
 if __name__=="__main__":
     dfss = clean(raw_small())
+    print(dfss)
     cast,crew = get_cast_and_crew_by_id(dfss)
-    #print(dfss.columns)
-    #for i,r in dfss.iterrows():
-    #    print(type(r[2]))
-    print(cast[2]['cast_id'])
-    print(cast[2]['name'])
+    print(dfss.values[0])
+
+#id

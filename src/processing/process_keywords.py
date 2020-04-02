@@ -1,18 +1,22 @@
 import pandas as pd
 import src.processing.util_processing as up
 import ast
+import src.processing.util_processing as up
+
 
 filename = "keywords.csv"
 
 def raw() :
-    df = pd.read_csv(up.data_raw_dir+filename)
-    return clean(df)
+    df = up.raw(filename)
+    return df
 
-def raw_small(count=1000, save=False, nameifsave="keywords_small.csv"):
-    dfs = raw()[:count]
+def raw_small(count=1000, save=False, nameifsave="keywords_small.csv", clean=False):
+    dfs = up.raw(filename=filename,limit=count)
+    if clean:
+        dfs=clean(dfs)
     if save:
         dfs.to_csv(up.data_processed_dir+filename)
-    return clean(dfs)
+    return dfs
 
 def get_keywords_of_film(df,id_film=1):
     if df is not None:
@@ -39,6 +43,9 @@ def clean(df):
     return df
 
 if __name__=="__main__":
-    df = raw()
-    kw = get_keywords_of_film_without_ids(df,111109)
+    df = clean(raw())
+    print(df)
+    kw = get_keywords_of_film(df,111109)
     print(kw)
+
+#id

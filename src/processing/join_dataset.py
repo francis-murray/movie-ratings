@@ -1,0 +1,29 @@
+import src.processing.process_credits as pcredits
+import src.processing.process_keywords as pkeywords
+import src.processing.process_movies_metadata as pmoviesmd
+import src.processing.process_ratings as pratings
+import math
+filename ="joined.csv"
+
+def joined():
+    dfCredits = pcredits.clean( pcredits.raw_small())
+    dfKeywords = pkeywords.clean( pkeywords.raw_small())
+    dfMoviesMD = pmoviesmd.clean( pmoviesmd.raw_small())
+    dfRatings = pratings.raw_small()
+    result = dfCredits.join(dfKeywords.set_index('id'), on='id')\
+        .join(dfMoviesMD.set_index('id'), on='id')\
+        .join(dfRatings.set_index('movieId'), on='id')
+
+    result['vote_average'].fillna(result['vote_average'].mean(), inplace=True)
+    result['vote_average']=result['vote_average'].apply(int)
+    return result
+def xy():
+    df = joined()
+    return df[['revenue','popularity','runtime','vote_count']],df['vote_average']
+if __name__=='__main__':
+    df = joined()
+    #df.to_csv(filename)
+    print(df.shape)
+    print(df.columns)
+    print(df)
+    print(df.values[1999])
