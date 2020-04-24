@@ -96,4 +96,3 @@ class MultipleLinearRegression:
     def predict(self,X):
         X = np.append([1],np.array(X))
         return sum(self.coef*X)
-

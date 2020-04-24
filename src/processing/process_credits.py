@@ -4,7 +4,6 @@ import ast
 filename = "credits.csv"
 
 def raw() :
-
     return up.raw(filename)
 
 
@@ -22,16 +21,18 @@ def get_cast_and_crew_by_id(df,id_film=433):
 
 
 def clean(df):
-    df['cast'].fillna('{}', inplace=True)
-    df['crew'].fillna('{}', inplace=True)
+    df['cast'].fillna('[]', inplace=True)
+    df['crew'].fillna('[]', inplace=True)
     df['cast'] = df['cast'].apply(lambda x:ast.literal_eval(x))
     df['crew'] = df['crew'].apply(lambda x:ast.literal_eval(x))
     return df
 
 if __name__=="__main__":
-    dfss = clean(raw_small())
+    dfss = clean(raw())
     print(dfss)
     cast,crew = get_cast_and_crew_by_id(dfss)
+    print(dfss.columns)
     print(dfss.values[0])
+    print(dfss['lenCast'].describe())
 
 #id

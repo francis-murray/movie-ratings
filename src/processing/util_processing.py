@@ -1,10 +1,9 @@
 import pandas as pd
 import sys
-sys.path.append("../../")
 import os
-os.chdir('../../')
-data_processed_dir = "data/processed/"
-data_raw_dir = "data/raw/"
+data_processed_dir ="/home/llp0702/Documents/dev/movie-ratings/data/processed/"
+data_raw_dir = "/home/llp0702/Documents/dev/movie-ratings/data/raw/"
+
 def raw(filename="",limit=1,all=True,dtype=None):
     if all:
         return pd.read_csv(data_raw_dir+filename,dtype=dtype)

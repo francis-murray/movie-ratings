@@ -6,8 +6,15 @@ import numpy as np
 filename = "ratings.csv"
 filename_small = "ratings_small.csv"
 
+filename_processed = "ratings_processed.csv"
+filename_small_processed= "ratings_small_processed.csv"
+
+
 def raw():
     return up.raw(filename)
+
+def processed():
+    return up.processed(filename_processed)
 
 def raw_small():
     return up.raw(filename_small)
@@ -27,15 +34,19 @@ def columns_rating_movieId(df):
     df = df[["rating","movieId"]]
     df = df.sort_values(["movieId"])
     df_grouped = df.groupby("movieId")
-    return pd.DataFrame(data={
+    result = pd.DataFrame(data={
         'movieId':list(df_grouped.groups.keys()),
         'number_of_ratings':np.array(df_grouped["rating"].count()),
         'rating_mean': np.array(df_grouped["rating"].mean()),
         'rating_median': np.array(df_grouped["rating"].median())
     })
+    result['rating_median'] = result['rating_median'].astype('int')
+    return result
 
 if __name__=="__main__":
     dfss = raw()
-    print(columns_rating_movieId(dfss))
+    dfss = columns_rating_movieId(dfss)
+    dfss.to_csv(up.data_processed_dir+filename_processed)
+    #print(columns_rating_movieId(dfss))
     print(dfss)
 

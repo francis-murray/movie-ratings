@@ -4,7 +4,10 @@ from sklearn.svm import SVC
 import matplotlib.pyplot as plt
 from sklearn.metrics import plot_roc_curve
 if __name__=='__main__':
-    x, yref = j.xy()
+
+    df = j.joined()
+    x, yref = df[['revenue','popularity','runtime','vote_count']], df['vote_average']
+
     for i in range(5):
         try:
             y=yref

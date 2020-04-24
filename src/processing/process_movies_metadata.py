@@ -43,7 +43,7 @@ def get_metadata_by_idfilm(df,id_film=0):
     return row
 
 def clean(df):
-    df.drop(['imdb_id', 'homepage', 'poster_path'], axis=1, inplace=True)
+    df.drop(['homepage', 'poster_path'], axis=1, inplace=True)
     df["adult"].fillna(False, inplace=True)
     df['belongs_to_collection'].fillna("{}", inplace=True)
     df['budget'].fillna(df["budget"].mean(), inplace=True)
@@ -79,6 +79,6 @@ if __name__=="__main__":
     df = clean(raw())
     print(df.columns)
 
-    print(get_metadata_by_idfilm(df,500))
+    print(get_metadata_by_idfilm(df,862))
 
 #id
