@@ -79,6 +79,7 @@ if __name__=="__main__":
     df = clean(raw())
     print(df.columns)
 
-    print(get_metadata_by_idfilm(df,862))
+    #print(get_metadata_by_idfilm(df,862))
+    print(df.values[0])
 
 #id
