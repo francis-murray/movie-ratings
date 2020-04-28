@@ -3,8 +3,10 @@ from sklearn import metrics
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn import linear_model
-from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.metrics import mean_squared_error, r2_score, classification_report, roc_auc_score
 import matplotlib.pyplot as plt
+from sklearn.preprocessing import StandardScaler, RobustScaler
+
 import src.processing.process_credits as credits
 import src.processing.join_keywords_ratings as kr
 import src.processing.process_ratings as ratings
@@ -15,6 +17,10 @@ import tkinter as tk
 import random
 import seaborn as sns
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from sklearn.model_selection import GridSearchCV
+
+from src.modeling import knn
+
 """
     Predict rating mean from 3 keywords of movies. We use Knn algorithm and we variate k from 1 to 25
 """
@@ -22,24 +28,36 @@ def knn_predict_rating_mean_from_3_keywords():
     df = prepare_rating_and_3_keywords()
     x = df[['keywordId0', 'keywordId1', 'keywordId2']]
     y = df['rating_mean']
-    apply_knn(x,y)
+    knn.apply_knn(x,y)
 
 """
     Predict rating mean from 3 keywords of movies and 7 actors.
     We use Knn algorithm and we variate k from 1 to 25
 """
 def knn_predict_rating_mean_from_3_keywords_and_7_actors():
-    df = prepare_rating_and_3_keywords_id_and_7_actors_id()
+    df = prepare_rating_and_3_keywords_id_and_7_actors_id(process=False)
     x = df[['keywordId0', 'keywordId1', 'keywordId2', 'cast0', 'cast1', 'cast2',
             'cast3', 'cast4', 'cast5', 'cast6']]
-    y = df['rating_mean']
-    knn=apply_knn(x, y)
+    y = df['rating_mean'].astype(int)
+
+    # Rescaling features age, trestbps, chol, thalach, oldpeak.
+    col = x.columns
+    scaler = RobustScaler()
+    x_scaled = scaler.fit_transform(x)
+    x = pd.DataFrame(x_scaled, columns=col)
+    print('Dataset infos :')
+    print(df.info())
+    print('Null values in the dataset :')
+    print(df.isnull().sum())
+
+
+    knn_model=knn.apply_knn(x, y)
     def infer(x, y):
         print('Test KNN:')
         print('given :',x)
-        print('predicted : ',knn.predict([x]))
+        print('predicted : ',knn_model.predict([x]))
         print('should predict : ',y)
-        print('-----------------------')
+        print('----------------------------------------------')
     for _ in range(25):
         randI = random.randint(0,len(x.values)-1)
         infer(x.values[randI], y[randI])
@@ -113,7 +131,7 @@ def prepare_rating_and_3_keywords():
 def prepare_rating_and_3_keywords_id_and_7_actors_id(process = False,
     filename = "keywords_3_first_cast_7_first_and_Films_ratings.csv"):
     if process:
-        df = kr.processed()
+        df = kr.read_raw_and_join_and_save(kr.filename)
         if 'Unnamed: 0' in df.columns:
             df = df.drop(columns=['Unnamed: 0'])
         df = df.rename(columns={'movieId': 'id'})
@@ -163,7 +181,7 @@ def prepare_rating_and_3_keywords_id_and_7_actors_id(process = False,
 
 """Show how ratings are distributed (in ratings.csv)"""
 def show_ratings_distribution():
-    df = pd.read_csv(up.data_raw_dir+"ratings_small.csv")['rating']
+    df = pd.read_csv(up.data_raw_dir+"ratings.csv")['rating']
 
     plt.style.use('ggplot')
     plt.hist(df, bins=5)
@@ -173,38 +191,9 @@ def show_ratings_distribution():
     plt.show()
 
 
-"""
-    Apply basic knn with k variating from 1 to 25 then plot the score foreach value of k
-"""
-def apply_knn(x,y):
-    X_train, X_test, Y_train, Y_test = train_test_split(x, y, test_size=0.2)
-    kmax= 60
-    scores = {}
-    scores_list = []
-    for k in range(1, kmax+1):
-        knn = KNeighborsClassifier(n_neighbors=k)
-        knn.fit(X_train, Y_train)
-        Y_pred = knn.predict(X_test)
-        scores[k] = metrics.accuracy_score(Y_test, Y_pred)
-        scores_list.append(scores[k])
-    plt.plot(range(1, kmax+1), scores_list)
-    plt.xlabel('K')
-    plt.ylabel('Score')
-    plt.title('Variation du score selon la valeur de K')
-    plt.show()
-
-    bestK = scores_list.index(max(scores_list))+1
-
-    print('Le meilleur K est : ', bestK, "avec le score de ", max(scores_list))
-
-    knn = KNeighborsClassifier(n_neighbors=bestK)
-    knn.fit(X_train, Y_train)
-
-    #On retourne le meilleur modèle
-    return knn
 
 
 if __name__=="__main__":
     #linear_regression_predict_imdb_score_from_metadata()
-    #show_ratings_distribution()
+    show_ratings_distribution()
     knn_predict_rating_mean_from_3_keywords_and_7_actors()

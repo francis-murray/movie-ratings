@@ -21,8 +21,7 @@ def get_cast_and_crew_by_id(df,id_film=433):
 
 
 def clean(df):
-    df['cast'].fillna('[]', inplace=True)
-    df['crew'].fillna('[]', inplace=True)
+    df.dropna(how='any', inplace=True)
     df['cast'] = df['cast'].apply(lambda x:ast.literal_eval(x))
     df['crew'] = df['crew'].apply(lambda x:ast.literal_eval(x))
     return df

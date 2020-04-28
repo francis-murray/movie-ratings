@@ -44,6 +44,30 @@ def get_metadata_by_idfilm(df,id_film=0):
 
 def clean(df):
     df.drop(['homepage', 'poster_path'], axis=1, inplace=True)
+    df.dropna(how='any', inplace=True)
+    """df = df[
+        (df["adult"].notnull()) &
+        (df['belongs_to_collection'].notnull()) &
+        (df['budget'].notnull()) &
+        (df['genres'].notnull()) &
+        (df['original_language'].notnull()) &
+        (df['original_title'].notnull()) &
+        (df['overview'].notnull()) &
+        (df['popularity'].notnull()) &
+        ( df['production_companies'].notnull()) &
+        ( df['production_countries'].notnull()) &
+        (df['release_date'].notnull()) &
+        (df['revenue'].notnull()) &
+        (df['runtime'].notnull()) &
+        (df['spoken_languages'].notnull()) &
+        (df['status'].notnull()) &
+        ( df['tagline'].notnull()) &
+        (df['title'].notnull()) &
+        (df['video'].notnull()) &
+        ( df['vote_average'].notnull()) &
+        (df['vote_count'].notnull())
+        ]"""
+    """
     df["adult"].fillna(False, inplace=True)
     df['belongs_to_collection'].fillna("{}", inplace=True)
     df['budget'].fillna(df["budget"].mean(), inplace=True)
@@ -64,7 +88,7 @@ def clean(df):
     df['video'].fillna(True, inplace=True)
     df['vote_average'].fillna(df['vote_average'].mean(), inplace=True)
     df['vote_count'].fillna(df['vote_count'].mean(), inplace=True)
-
+    """
     df["adult"] = df["adult"].apply(lambda x:x=='True')
     df['belongs_to_collection'] = df['belongs_to_collection'].apply(lambda x:ast.literal_eval(x))
     df['genres'] = df['genres'].apply(lambda x:ast.literal_eval(x))

@@ -26,9 +26,12 @@ def join(dfKw, dfRt):
     print(dfKw.columns)
     print(dfRt.columns)
     result = dfRt.join(dfKw.set_index('id'), on='movieId')
+    result.dropna(how='any', inplace=True)
+    """
     result['keywordId0'].fillna(0, inplace=True)
     result['keywordId1'].fillna(0, inplace=True)
     result['keywordId2'].fillna(0, inplace=True)
+    """
     result = result[((result['keywordId0'] != 0) | (result['keywordId1'] != 0) | (result['keywordId2'] != 0))]
     return result
 
@@ -40,6 +43,7 @@ def read_raw_and_join_and_save(filename):
     dfKw, dfRt = read_raw()
     result = join(dfKw, dfRt)
     save(result, filename)
+    return result
 
 def read_processed_and_join_and_save(filename):
     dfKw, dfRt = read_processed()
