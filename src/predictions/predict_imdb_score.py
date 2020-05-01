@@ -9,17 +9,19 @@ from sklearn import linear_model
 from sklearn.metrics import mean_squared_error, r2_score
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import RobustScaler
-
+import src.modeling.linear_regression_scikit  as lin_reg_sci
 import src.processing.process_credits as credits
 import src.processing.join_keywords_ratings as kr
 import src.processing.process_ratings as ratings
 import src.processing.util_processing as up
 import src.processing.process_movies_metadata as md
+import src.modeling.random_forest as random_forest
 import pandas as pd
 import tkinter as tk
 import seaborn as sns
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-
+from sklearn.tree import export_graphviz
+import pydot
 
 from src.modeling import knn
 
@@ -38,15 +40,14 @@ def knn_predict_imdb_score_from_metadata():
     knn_model = knn.apply_knn(x,y)
     knn.test_knn(x, y, knn_model)
 
-
 def linear_regression_predict_imdb_score_from_metadata():
     df = load_and_visualize_data()
     df = df[['weighted_vote_average', 'revenue', 'popularity', 'budget', 'runtime']]
     #pearson_correlation_heatmap(df)
     y = df['weighted_vote_average']
     x = df[['revenue', 'popularity', 'budget', 'runtime']]
-    lin_reg= linear_regression_multiple(x,y)
-    test_linear_regression_multiple(x,y,lin_reg)
+    lin_reg= lin_reg_sci.linear_regression_multiple(x,y)
+    lin_reg_sci.test_linear_regression_multiple(x,y,lin_reg)
 
 def random_forest_predict_imdb_score_from_metadata():
     df = load_and_visualize_data()
@@ -54,25 +55,28 @@ def random_forest_predict_imdb_score_from_metadata():
     # pearson_correlation_heatmap(df)
     y = df['weighted_score_category']
     x = df[['revenue', 'popularity', 'budget', 'runtime']]
-    col = x.columns
-    scaler = RobustScaler()
-    x_scaled = scaler.fit_transform(x)
-    x = pd.DataFrame(x_scaled, columns=col)
+    #col = x.columns
+    #scaler = RobustScaler()
+    #x_scaled = scaler.fit_transform(x)
+    #x = pd.DataFrame(x_scaled, columns=col)
 
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.20)
-    clf = RandomForestClassifier(max_depth=2, random_state=0)
-    clf.fit(x_train,y_train)
+    rf = random_forest.apply_random_forest(x_train, y_train)
 
-    pred = clf.predict(x_test)
+    pred = rf.predict(x_test)
     s=0
     for i in range(len(pred)):
         if pred[i]==y_test.values[i]:s+=1
-    print(s/len(pred))
+    print("Score de la Random Forest :",s/len(pred))
     #print('Mean Absolute Error:', round(np.mean(error), 2), 'degrees.')
 
     #mape = 100 * (error / y_test)
 
-def load_and_visualize_data():
+    random_forest.vizualize_random_forest(x, y, rf, up.data_processed_dir+'random_forest_predict_imdb_score')
+
+
+
+def load_and_visualize_data(visu=True):
     df = None
     try:
         df = pd.read_csv(up.data_processed_dir + "metadata_rating.csv")
@@ -112,24 +116,25 @@ def load_and_visualize_data():
 
     df['weighted_vote_average'] = df.apply(imdb_formula, axis=1)
     df = df[(df['weighted_vote_average'].notnull())]
-    print(df.head())
-    print('Dataset infos :')
-    print(df.info())
-    print('Null values in the dataset :')
-    print(df.isnull().sum())
+    if (visu):
+        print(df.head())
+        print('Dataset infos :')
+        print(df.info())
+        print('Null values in the dataset :')
+        print(df.isnull().sum())
 
-    print('Le 95ème centile de chacune des colonnes :')
-    d = {}
-    for colN in df.columns:
-        if np.issubdtype(df[colN].dtype, np.number):
-            # col = df[colN].values
-            d[colN] = df[colN].quantile(0.05)
-    for key, value in d.items():
-        print('\t' + key, value, sep=':')
+        print('Le 95ème centile de chacune des colonnes :')
+        d = {}
+        for colN in df.columns:
+            if np.issubdtype(df[colN].dtype, np.number):
+                # col = df[colN].values
+                d[colN] = df[colN].quantile(0.05)
+        for key, value in d.items():
+            print('\t' + key, value, sep=':')
 
-    print(df.shape)
-    # df = df[df['vote_count'] >= d['vote_count']]
-    print(df.shape)
+        print('shape of dataset :',df.shape)
+        # df = df[df['vote_count'] >= d['vote_count']]
+
 
     def categorize_rating(x):
         val = x
@@ -144,16 +149,18 @@ def load_and_visualize_data():
 
     df['weighted_score_category'] = df['vote_average'].apply(categorize_rating)
 
-    plt.title('Distribution des films pour adultes')
-    lst = [df[df['adult'] == True]['adult'].count(), df[df['adult'] == False]['adult'].count()]
-    plt.pie(lst, labels=('Oui', 'Non'), autopct='%1.1f%%')
-    plt.show()
-    show_hist_distribution(df['revenue'], x='Revenue', title='Distribution des revenus', bins=200)
-    show_hist_distribution(df['vote_count'], x='Nombre de votes', title='Distirbution du nombre de votes', bins=200)
-    show_hist_distribution(df['weighted_vote_average'], x='Score imdb', title='Distribution des scores imdb', bins=4)
-    show_hist_distribution(df['weighted_score_category'], x='Score imdb', title='Distribution des scores imdb', bins=4)
-    show_hist_distribution(df['original_language'], x='Langage original', title='Distribution du langage original',
-                           bins=df['original_language'].nunique())
+    if visu:
+        pearson_correlation_heatmap(df.loc[:, (df.columns!='adult') & (df.columns!='video')])
+        plt.title('Distribution des films pour adultes')
+        lst = [df[df['adult'] == True]['adult'].count(), df[df['adult'] == False]['adult'].count()]
+        plt.pie(lst, labels=('Oui', 'Non'), autopct='%1.1f%%')
+        plt.show()
+        show_hist_distribution(df['revenue'], x='Revenue', title='Distribution des revenus', bins=200)
+        show_hist_distribution(df['vote_count'], x='Nombre de votes', title='Distirbution du nombre de votes', bins=200)
+        show_hist_distribution(df['weighted_vote_average'], x='Score imdb', title='Distribution des scores imdb', bins=4)
+        show_hist_distribution(df['weighted_score_category'], x='Score imdb', title='Distribution des scores imdb', bins=4)
+        show_hist_distribution(df['original_language'], x='Langage original', title='Distribution du langage original',
+                               bins=df['original_language'].nunique())
 
     return df
 
@@ -178,30 +185,6 @@ def imdb_formula(x):
     c=7.0
     m=25000
     return round((x['vote_average']*x['vote_count']+c*m)/(x['vote_count']+m),2)
-
-def linear_regression_multiple(x,y):
-    X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=9)
-    lin_reg = linear_model.LinearRegression()
-    lin_reg.fit(X_train, y_train)
-    pred = lin_reg.predict(X_test)
-    test_set_rmse = (np.sqrt(mean_squared_error(y_test, pred)))
-    test_set_r2 = r2_score(y_test, pred)
-    print("RMSE = ", test_set_rmse, " | Plus la valeur est petite, mieux c'est")
-    print("R2 = ", test_set_r2, " | Plus la valeur est proche de 1, mieux c'est, si la valeur est négative, alors le "
-                                "modèle ne correspond pas aux données")
-    return lin_reg
-
-def test_linear_regression_multiple(x,y,lin_reg):
-    def infer(x, y):
-        print('Test Multiple Linear Regression:')
-        print('given :', x)
-        print('predicted : ', lin_reg.predict([x]))
-        print('should predict : ', y)
-        print('-----------------------')
-
-    for _ in range(10):
-        randI = random.randint(0, len(x.values) - 1)
-        infer(x.values[randI], y.values[randI])
 
 
 if __name__=="__main__":
