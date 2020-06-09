@@ -1,28 +1,15 @@
-import random
-
-import numpy as np
-from sklearn import metrics
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn import linear_model
-from sklearn.metrics import mean_squared_error, r2_score
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import RobustScaler
+
 import src.modeling.linear_regression_scikit  as lin_reg_sci
-import src.processing.process_credits as credits
-import src.processing.join_keywords_ratings as kr
+import src.modeling.random_forest as random_forest
+import src.processing.process_movies_metadata as md
 import src.processing.process_ratings as ratings
 import src.processing.util_processing as up
-import src.processing.process_movies_metadata as md
-import src.modeling.random_forest as random_forest
-import pandas as pd
-import tkinter as tk
-import seaborn as sns
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from sklearn.tree import export_graphviz
-import pydot
-
 from src.modeling import knn
 
 
@@ -37,17 +24,19 @@ def knn_predict_imdb_score_from_metadata():
     x_scaled = scaler.fit_transform(x)
     x = pd.DataFrame(x_scaled, columns=col)
 
-    knn_model = knn.apply_knn(x,y)
+    knn_model = knn.apply_knn(x, y)
     knn.test_knn(x, y, knn_model)
+
 
 def linear_regression_predict_imdb_score_from_metadata():
     df = load_and_visualize_data()
     df = df[['weighted_vote_average', 'revenue', 'popularity', 'budget', 'runtime']]
-    #pearson_correlation_heatmap(df)
+    # pearson_correlation_heatmap(df)
     y = df['weighted_vote_average']
     x = df[['revenue', 'popularity', 'budget', 'runtime']]
-    lin_reg= lin_reg_sci.linear_regression_multiple(x,y)
-    lin_reg_sci.test_linear_regression_multiple(x,y,lin_reg)
+    lin_reg = lin_reg_sci.linear_regression_multiple(x, y)
+    lin_reg_sci.test_linear_regression_multiple(x, y, lin_reg)
+
 
 def random_forest_predict_imdb_score_from_metadata():
     df = load_and_visualize_data()
@@ -55,25 +44,24 @@ def random_forest_predict_imdb_score_from_metadata():
     # pearson_correlation_heatmap(df)
     y = df['weighted_score_category']
     x = df[['revenue', 'popularity', 'budget', 'runtime']]
-    #col = x.columns
-    #scaler = RobustScaler()
-    #x_scaled = scaler.fit_transform(x)
-    #x = pd.DataFrame(x_scaled, columns=col)
+    # col = x.columns
+    # scaler = RobustScaler()
+    # x_scaled = scaler.fit_transform(x)
+    # x = pd.DataFrame(x_scaled, columns=col)
 
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.20)
     rf = random_forest.apply_random_forest(x_train, y_train)
 
     pred = rf.predict(x_test)
-    s=0
+    s = 0
     for i in range(len(pred)):
-        if pred[i]==y_test.values[i]:s+=1
-    print("Score de la Random Forest :",s/len(pred))
-    #print('Mean Absolute Error:', round(np.mean(error), 2), 'degrees.')
+        if pred[i] == y_test.values[i]: s += 1
+    print("Score de la Random Forest :", s / len(pred))
+    # print('Mean Absolute Error:', round(np.mean(error), 2), 'degrees.')
 
-    #mape = 100 * (error / y_test)
+    # mape = 100 * (error / y_test)
 
-    random_forest.vizualize_random_forest(x, y, rf, up.data_processed_dir+'random_forest_predict_imdb_score')
-
+    random_forest.vizualize_random_forest(x, y, rf, up.data_processed_dir + 'random_forest_predict_imdb_score')
 
 
 def load_and_visualize_data(visu=True):
@@ -132,9 +120,8 @@ def load_and_visualize_data(visu=True):
         for key, value in d.items():
             print('\t' + key, value, sep=':')
 
-        print('shape of dataset :',df.shape)
+        print('shape of dataset :', df.shape)
         # df = df[df['vote_count'] >= d['vote_count']]
-
 
     def categorize_rating(x):
         val = x
@@ -150,30 +137,34 @@ def load_and_visualize_data(visu=True):
     df['weighted_score_category'] = df['vote_average'].apply(categorize_rating)
 
     if visu:
-        pearson_correlation_heatmap(df.loc[:, (df.columns!='adult') & (df.columns!='video')])
+        pearson_correlation_heatmap(df.loc[:, (df.columns != 'adult') & (df.columns != 'video')])
         plt.title('Distribution des films pour adultes')
         lst = [df[df['adult'] == True]['adult'].count(), df[df['adult'] == False]['adult'].count()]
         plt.pie(lst, labels=('Oui', 'Non'), autopct='%1.1f%%')
         plt.show()
         show_hist_distribution(df['revenue'], x='Revenue', title='Distribution des revenus', bins=200)
         show_hist_distribution(df['vote_count'], x='Nombre de votes', title='Distirbution du nombre de votes', bins=200)
-        show_hist_distribution(df['weighted_vote_average'], x='Score imdb', title='Distribution des scores imdb', bins=4)
-        show_hist_distribution(df['weighted_score_category'], x='Score imdb', title='Distribution des scores imdb', bins=4)
+        show_hist_distribution(df['weighted_vote_average'], x='Score imdb', title='Distribution des scores imdb',
+                               bins=4)
+        show_hist_distribution(df['weighted_score_category'], x='Score imdb', title='Distribution des scores imdb',
+                               bins=4)
         show_hist_distribution(df['original_language'], x='Langage original', title='Distribution du langage original',
                                bins=df['original_language'].nunique())
 
     return df
 
-#On remarque quand on voit la matrice de pearson que le weighted vote average n'est corrélé avec aucune de ces variables
-#Cependant on remarque d'autres correlations notamment entre revenue, popularité et budget
-#Draw the heatmap matrix of correlation between numerical features
+
+# On remarque quand on voit la matrice de pearson que le weighted vote average n'est corrélé avec aucune de ces variables
+# Cependant on remarque d'autres correlations notamment entre revenue, popularité et budget
+# Draw the heatmap matrix of correlation between numerical features
 def pearson_correlation_heatmap(df):
     plt.figure(figsize=(12, 10))
     cor = df.corr()
     sns.heatmap(cor, annot=True, cmap=plt.cm.Reds)
     plt.show()
 
-def show_hist_distribution(col,x='',y='Frequence',title='',bins=5):
+
+def show_hist_distribution(col, x='', y='Frequence', title='', bins=5):
     plt.style.use('ggplot')
     plt.hist(col, bins=bins)
     plt.xlabel(x)
@@ -181,13 +172,14 @@ def show_hist_distribution(col,x='',y='Frequence',title='',bins=5):
     plt.title(title)
     plt.show()
 
+
 def imdb_formula(x):
-    c=7.0
-    m=25000
-    return round((x['vote_average']*x['vote_count']+c*m)/(x['vote_count']+m),2)
+    c = 7.0
+    m = 25000
+    return round((x['vote_average'] * x['vote_count'] + c * m) / (x['vote_count'] + m), 2)
 
 
-if __name__=="__main__":
-    #linear_regression_predict_imdb_score_from_metadata()
-    #knn_predict_imdb_score_from_metadata()
+if __name__ == "__main__":
+    # linear_regression_predict_imdb_score_from_metadata()
+    # knn_predict_imdb_score_from_metadata()
     random_forest_predict_imdb_score_from_metadata()

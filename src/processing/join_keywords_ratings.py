@@ -2,13 +2,16 @@ import src.processing.process_keywords as kw
 import src.processing.process_ratings as rt
 import src.processing.util_processing as up
 
-filename="keywords_3_first_id_and_Films_ratings.csv"
+filename = "keywords_3_first_id_and_Films_ratings.csv"
+
 
 def read_raw():
     dfKw = kw.clean(kw.raw())
     dfKw = dfKw.drop(columns=["keywords"])
     dfRt = rt.columns_rating_movieId(rt.raw())
     return dfKw, dfRt
+
+
 def read_processed():
     dfKw = kw.processed()
     dfRt = rt.processed()
@@ -21,6 +24,7 @@ def read_processed():
         dfRt = dfRt.drop(columns=['Unnamed: 0'])
 
     return dfKw, dfRt
+
 
 def join(dfKw, dfRt):
     print(dfKw.columns)
@@ -35,7 +39,8 @@ def join(dfKw, dfRt):
     result = result[((result['keywordId0'] != 0) | (result['keywordId1'] != 0) | (result['keywordId2'] != 0))]
     return result
 
-def save(result,filename):
+
+def save(result, filename):
     result.to_csv(up.data_processed_dir + filename)
 
 
@@ -45,12 +50,12 @@ def read_raw_and_join_and_save(filename):
     save(result, filename)
     return result
 
+
 def read_processed_and_join_and_save(filename):
     dfKw, dfRt = read_processed()
     result = join(dfKw, dfRt)
 
     save(result, filename)
-
 
 
 def processed():
@@ -64,5 +69,6 @@ def processed():
     result['keywordId2'] = result['keywordId2'].astype('int')
     return result
 
-if __name__=="__main__":
+
+if __name__ == "__main__":
     read_raw_and_join_and_save(filename)
