@@ -1,2 +1,5 @@
 /workspace.xml
 data/
+
+*.pyc
+*.DS_STORE

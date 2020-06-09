@@ -1,6 +1,9 @@
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import f1_score
 from sklearn.model_selection import train_test_split
+from sklearn.multiclass import OneVsRestClassifier
 from sklearn.preprocessing import MultiLabelBinarizer
 from sklearn.multiclass import OneVsRestClassifier, OneVsOneClassifier
 from sklearn.linear_model import LogisticRegression
@@ -163,8 +166,8 @@ def prepare_data_frame_and_build_model(visu = True):
 
     tfidf_vect = TfidfVectorizer(max_features=30000)
 
-    x_train, x_test, y_train, y_test = train_test_split(df[['clean_x','title_not_modified']], labels)
-    #df['features'] = tfidf_vect.fit_transform(df['clean_x'])
+    x_train, x_test, y_train, y_test = train_test_split(df[['clean_x', 'title_not_modified']], labels)
+    # df['features'] = tfidf_vect.fit_transform(df['clean_x'])
     x_train_tf_idf = tfidf_vect.fit_transform(x_train['clean_x'])
     x_test_tf_idf = tfidf_vect.transform(x_test['clean_x'])
 
@@ -179,19 +182,19 @@ def prepare_data_frame_and_build_model(visu = True):
     y_pred = threshold_decision(clf.predict_proba(x_test_tf_idf))
     f1score = f1_score(y_test, y_pred, average='micro')
 
-    def predict(overview="",belongs_to_collection="",original_title="",title="",tagline=""):
+    def predict(overview="", belongs_to_collection="", original_title="", title="", tagline=""):
         x = join({
-            'overview':clean_text_nltk(overview),
-            'belongs_to_collection':belongs_to_collection.replace(' ',''),
-            'original_title':clean_text_nltk(original_title),
-            'title':clean_text_nltk(title),
-            'tagline':clean_text_nltk(tagline)
+            'overview': clean_text_nltk(overview),
+            'belongs_to_collection': belongs_to_collection.replace(' ', ''),
+            'original_title': clean_text_nltk(original_title),
+            'title': clean_text_nltk(title),
+            'tagline': clean_text_nltk(tagline)
         })
         x_tfidf_vect = tfidf_vect.transform([x])
         return mb.inverse_transform(threshold_decision(clf.predict_proba(x_tfidf_vect)))
 
     for i in range(100):
-        random_pos =  random.randint(0, len(x_test))
+        random_pos = random.randint(0, len(x_test))
         y_p = predict(x_test['clean_x'].values[random_pos])
         print("Title : ",x_test['title_not_modified'].values[random_pos], x_test['clean_x'].values[random_pos])
         print('Predicted : ', y_p[0])

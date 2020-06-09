@@ -1,42 +1,49 @@
-import src.processing.util_processing as up
 import ast
+
 import pandas as pd
+
+import src.processing.util_processing as up
+
 filename = "credits.csv"
 
-def raw() :
+
+def raw():
     return up.raw(filename)
 
 
 def raw_small(count=1000, save=False, nameifsave="credits_small.csv"):
     dfs = raw()[:count]
     if save:
-        dfs.to_csv(up.data_processed_dir+nameifsave)
+        dfs.to_csv(up.data_processed_dir + nameifsave)
     return dfs
 
-def get_cast_and_crew_by_id(df,id_film=433):
-    row = df.loc[df['id']==id_film].values[0]
+
+def get_cast_and_crew_by_id(df, id_film=433):
+    row = df.loc[df['id'] == id_film].values[0]
     cast = row[0]
     crew = row[1]
-    return cast,crew
+    return cast, crew
 
 
 def clean(df):
     df.dropna(how='any', inplace=True)
-    df['cast'] = df['cast'].apply(lambda x:ast.literal_eval(x))
-    df['crew'] = df['crew'].apply(lambda x:ast.literal_eval(x))
+    df['cast'] = df['cast'].apply(lambda x: ast.literal_eval(x))
+    df['crew'] = df['crew'].apply(lambda x: ast.literal_eval(x))
     return df
+
 
 def get_all_cast(df=None):
     try:
         if df is None:
-            cast = pd.read_csv(up.data_processed_dir+"actors.csv")
+            cast = pd.read_csv(up.data_processed_dir + "actors.csv")
             if 'Unnamed: 0' in cast.columns:
-                cast =cast.drop(columns=['Unnamed: 0'])
+                cast = cast.drop(columns=['Unnamed: 0'])
             print(cast)
             print(len(cast))
             print(cast.values[0])
             return cast
-        else : raise Exception
+        else:
+            raise Exception
     except:
         if df is None:
             df = clean(raw())
@@ -58,8 +65,8 @@ def get_all_cast(df=None):
         return cast
 
 
-if __name__=="__main__":
-    #dfss = clean(raw())
+if __name__ == "__main__":
+    # dfss = clean(raw())
     get_all_cast()
     print("salut")
-#id
+# id

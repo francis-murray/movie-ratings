@@ -3,33 +3,35 @@ from sklearn.metrics import mean_squared_error, r2_score, classification_report,
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler, RobustScaler
 
-import src.processing.process_credits as credits
-import src.processing.join_keywords_ratings as kr
-import src.processing.process_ratings as ratings
-import src.processing.util_processing as up
-import src.processing.process_movies_metadata as md
+import matplotlib.pyplot as plt
 import pandas as pd
-import tkinter as tk
-import random
-import seaborn as sns
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from sklearn.model_selection import GridSearchCV
+from sklearn import linear_model
+from sklearn.preprocessing import RobustScaler
 
+import src.processing.join_keywords_ratings as kr
+import src.processing.process_credits as credits
+import src.processing.util_processing as up
 from src.modeling import knn
 
 """
     Predict rating mean from 3 keywords of movies. We use Knn algorithm and we variate k from 1 to 25
 """
+
+
 def knn_predict_rating_mean_from_3_keywords():
     df = prepare_rating_and_3_keywords()
     x = df[['keywordId0', 'keywordId1', 'keywordId2']]
     y = df['rating_mean']
-    knn.apply_knn(x,y)
+    knn.apply_knn(x, y)
+
 
 """
     Predict rating mean from 3 keywords of movies and 7 actors.
     We use Knn algorithm and we variate k from 1 to 25
 """
+
+
 def knn_predict_rating_mean_from_3_keywords_and_7_actors():
     df = prepare_rating_and_3_keywords_id_and_7_actors_id(process=False)
     x = df[['keywordId0', 'keywordId1', 'keywordId2', 'cast0', 'cast1', 'cast2',
@@ -46,16 +48,17 @@ def knn_predict_rating_mean_from_3_keywords_and_7_actors():
     print('Null values in the dataset :')
     print(df.isnull().sum())
 
+    knn_model = knn.apply_knn(x, y)
 
-    knn_model=knn.apply_knn(x, y)
     def infer(x, y):
         print('Test KNN:')
-        print('given :',x)
-        print('predicted : ',knn_model.predict([x]))
-        print('should predict : ',y)
+        print('given :', x)
+        print('predicted : ', knn_model.predict([x]))
+        print('should predict : ', y)
         print('----------------------------------------------')
+
     for _ in range(25):
-        randI = random.randint(0,len(x.values)-1)
+        randI = random.randint(0, len(x.values) - 1)
         infer(x.values[randI], y[randI])
 
 
@@ -66,9 +69,11 @@ def knn_predict_rating_mean_from_3_keywords_and_7_actors():
     We see that the prediction is not good because it's not a regression problem. There is visually no linear relation
     between keywordId and rating_mean, neither betewen actorsId and rating mean. Its more a classification problem.
 """
+
+
 def linear_regression_predict_rating_mean_from_3_keywords_and_7_actors():
     df = prepare_rating_and_3_keywords_id_and_7_actors_id()
-    x = df[['keywordId0','cast0']]
+    x = df[['keywordId0', 'cast0']]
     y = df['rating_mean']
     regr = linear_model.LinearRegression()
     regr.fit(x, y)
@@ -91,7 +96,6 @@ def linear_regression_predict_rating_mean_from_3_keywords_and_7_actors():
     Coefficients_result = ('Coefficients: ', regr.coef_)
     label_Coefficients = tk.Label(root, text=Coefficients_result, justify='center')
     canvas1.create_window(260, 240, window=label_Coefficients)
-
 
     # plot 1st scatter
     figure3 = plt.Figure(figsize=(5, 4), dpi=100)
@@ -116,16 +120,15 @@ def linear_regression_predict_rating_mean_from_3_keywords_and_7_actors():
     root.mainloop()
 
 
-
-
 def prepare_rating_and_3_keywords():
     df = kr.processed()
     if 'Unnamed: 0' in df.columns:
         df = df.drop(columns=['Unnamed: 0'])
     return df
 
-def prepare_rating_and_3_keywords_id_and_7_actors_id(process = False,
-    filename = "keywords_3_first_cast_7_first_and_Films_ratings.csv"):
+
+def prepare_rating_and_3_keywords_id_and_7_actors_id(process=False,
+                                                     filename="keywords_3_first_cast_7_first_and_Films_ratings.csv"):
     if process:
         df = kr.read_raw_and_join_and_save(kr.filename)
         if 'Unnamed: 0' in df.columns:
@@ -174,10 +177,11 @@ def prepare_rating_and_3_keywords_id_and_7_actors_id(process = False,
     return df
 
 
-
 """Show how ratings are distributed (in ratings.csv)"""
+
+
 def show_ratings_distribution():
-    df = pd.read_csv(up.data_raw_dir+"ratings.csv")['rating']
+    df = pd.read_csv(up.data_raw_dir + "ratings.csv")['rating']
 
     plt.style.use('ggplot')
     plt.hist(df, bins=5)
@@ -187,9 +191,7 @@ def show_ratings_distribution():
     plt.show()
 
 
-
-
-if __name__=="__main__":
-    #linear_regression_predict_imdb_score_from_metadata()
+if __name__ == "__main__":
+    # linear_regression_predict_imdb_score_from_metadata()
     show_ratings_distribution()
     knn_predict_rating_mean_from_3_keywords_and_7_actors()
