@@ -189,5 +189,5 @@ def imdb_formula(x):
 
 if __name__=="__main__":
     #linear_regression_predict_imdb_score_from_metadata()
-    #knn_predict_imdb_score_from_metadata()
-    random_forest_predict_imdb_score_from_metadata()
+    knn_predict_imdb_score_from_metadata()
+    #random_forest_predict_imdb_score_from_metadata()

@@ -4,7 +4,7 @@ from sklearn.tree import export_graphviz
 import matplotlib.pyplot as plt
 
 def apply_random_forest(x,y):
-    rf = RandomForestClassifier(max_depth=2, random_state=0)
+    rf = RandomForestClassifier(max_depth=20, random_state=0)
     rf.fit(x,y)
     return rf
 

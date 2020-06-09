@@ -1,7 +1,3 @@
-import numpy as np
-from sklearn import metrics
-from sklearn.model_selection import train_test_split
-from sklearn.neighbors import KNeighborsClassifier
 from sklearn import linear_model
 from sklearn.metrics import mean_squared_error, r2_score, classification_report, roc_auc_score
 import matplotlib.pyplot as plt
