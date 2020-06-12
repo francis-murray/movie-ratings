@@ -3,15 +3,18 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import f1_score
 from sklearn.model_selection import train_test_split
+from sklearn.model_selection import cross_val_score
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.preprocessing import MultiLabelBinarizer
 from sklearn.multiclass import OneVsRestClassifier, OneVsOneClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import f1_score
+from sklearn.svm import LinearSVC
 from sklearn.tree import DecisionTreeClassifier
 from sklearn import svm
 import src.processing.process_movies_metadata as processing
 import src.processing.util_processing as up
+import src.processing.process_keywords as keywords_processing
 from matplotlib import pyplot as plt
 import pandas as pd
 import seaborn as sns
@@ -24,12 +27,15 @@ import random
 import numpy as np
 import nltk
 import ast
+import timeit
+from sklearn.metrics import accuracy_score
 nltk.download('punkt')
 nltk.download('stopwords')
 
+seuil = 0.3
 
 # Clean a text manually
-def clean_text(text):
+def clean_text_me(text):
     words = re.split(r'\W+', text)
     mapper = str.maketrans('', '', string.punctuation)
     words = [x.translate(mapper).lower() for x in words]
@@ -44,6 +50,9 @@ def clean_text_nltk(text):
     words = [word for word in tokens if word.isalpha()]
     words = [porter.stem(w).lower() for w in words if not w.lower() in stop_words]
     return words
+
+def clean_text(text):
+    return clean_text_nltk(text)
 
 def collect_occurences(list_words,dic):
     for x in list_words:
@@ -68,22 +77,29 @@ def join(x):
         ' '.join(x['original_title']),
         ' '.join(x['title']),
         ' '.join(x['tagline']),
-        ' '.join(x['overview'])
+        ' '.join(x['overview']),
+        ' '.join(x['keywords'])
     ])
 
 def prepare_data_frame(visu = True, load_raw = False, filename = "predict_movie_categories_dataframe.csv", save=True):
     df=None
     labels = None
     mb = None
+    print("start prepare data")
+    start = timeit.default_timer()
     genres_with_occurences = {}
     words_with_occurences = {}
     if load_raw:
         df = processing.clean(processing.raw())
-        df = df[['belongs_to_collection', 'genres', 'original_title', 'overview',
+        df = df[['id','belongs_to_collection', 'genres', 'original_title', 'overview',
                  'tagline', 'title']]
         df['belongs_to_collection'] = df['belongs_to_collection'] \
             .apply(lambda x: x['name'] if 'name' in x.keys() else '')
         df['genres'] = df['genres'].apply(lambda x: [e['name'] for e in x])
+
+        keywords = keywords_processing.get_films_with_keywords(keywords_processing.raw())
+
+        df = pd.merge(df, keywords, how='left', on=['id'])
 
         genres_with_occurences = {}
         df['genres'].apply(lambda x: collect_occurences(x, genres_with_occurences))
@@ -100,11 +116,12 @@ def prepare_data_frame(visu = True, load_raw = False, filename = "predict_movie_
         mb = MultiLabelBinarizer()
         labels = mb.fit_transform(df['genres'])
 
-        df['overview'] = df['overview'].apply(clean_text_nltk)
-        df['tagline'] = df['tagline'].apply(clean_text_nltk)
+        df['keywords'] = df['keywords'].apply(clean_text)
+        df['overview'] = df['overview'].apply(clean_text)
+        df['tagline'] = df['tagline'].apply(clean_text)
         df['title_not_modified'] = df['title']
-        df['title'] = df['title'].apply(clean_text_nltk)
-        df['original_title'] = df['original_title'].apply(clean_text_nltk)
+        df['title'] = df['title'].apply(clean_text)
+        df['original_title'] = df['original_title'].apply(clean_text)
         df['belongs_to_collection'] = df['belongs_to_collection'].apply(lambda x: x.replace(' ', ''))
         words_with_occurences = {}
         df['overview'].apply(lambda x: collect_occurences(x, words_with_occurences))
@@ -125,6 +142,8 @@ def prepare_data_frame(visu = True, load_raw = False, filename = "predict_movie_
         mb = MultiLabelBinarizer()
         labels = mb.fit_transform(df['genres'])
 
+    end = timeit.default_timer()
+    print("End prepare data, time : ", end-start)
     if visu:
         print(df.head())
         print(df.columns)
@@ -161,10 +180,26 @@ def prepare_data_frame(visu = True, load_raw = False, filename = "predict_movie_
         print("For example, ", labels[0], "Stands for", mb.inverse_transform(labels)[0])
     return df, mb, labels
 
-def prepare_data_frame_and_build_model(visu = True):
-    df, mb, labels = prepare_data_frame(load_raw=True)
 
-    tfidf_vect = TfidfVectorizer(max_features=30000)
+def predict(overview="", belongs_to_collection="", original_title="", title="", tagline="", keywords="",
+            multilabel_binarizer=None, classifier=None,
+            tfidf_vect=None, threshold_decision=np.vectorize(lambda t: 1 if t>seuil else 0)):
+    x = join({
+        'overview': clean_text(overview),
+        'belongs_to_collection': belongs_to_collection.replace(' ', ''),
+        'original_title': clean_text(original_title),
+        'title': clean_text(title),
+        'tagline': clean_text(tagline),
+        'keywords': clean_text(keywords)
+    })
+    x_tfidf_vect = tfidf_vect.transform([x])
+    return multilabel_binarizer.inverse_transform(threshold_decision(classifier.predict_proba(x_tfidf_vect)))
+
+
+def prepare_data_frame_and_build_model(visu = True):
+    df, mb, labels = prepare_data_frame(load_raw=False)
+
+    tfidf_vect = TfidfVectorizer(max_features=50000)
 
     x_train, x_test, y_train, y_test = train_test_split(df[['clean_x', 'title_not_modified']], labels)
     # df['features'] = tfidf_vect.fit_transform(df['clean_x'])
@@ -177,30 +212,48 @@ def prepare_data_frame_and_build_model(visu = True):
     #clf = OneVsRestClassifier(DecisionTreeClassifier()) #Mauvais score, et lent fit (0.471)
     clf.fit(x_train_tf_idf, y_train)
 
-    seuil = 0.25
+    print("Classifier parameters :")
+    print(clf.get_params())
+
     threshold_decision = np.vectorize(lambda t: 1 if t>seuil else 0)
     y_pred = threshold_decision(clf.predict_proba(x_test_tf_idf))
     f1score = f1_score(y_test, y_pred, average='micro')
-
-    def predict(overview="", belongs_to_collection="", original_title="", title="", tagline=""):
-        x = join({
-            'overview': clean_text_nltk(overview),
-            'belongs_to_collection': belongs_to_collection.replace(' ', ''),
-            'original_title': clean_text_nltk(original_title),
-            'title': clean_text_nltk(title),
-            'tagline': clean_text_nltk(tagline)
-        })
-        x_tfidf_vect = tfidf_vect.transform([x])
-        return mb.inverse_transform(threshold_decision(clf.predict_proba(x_tfidf_vect)))
-
-    for i in range(100):
+    eval1 = evaluation1(y_test, y_pred)
+    eval2 = evaluation2(y_test, y_pred)
+    for i in range(10):
         random_pos = random.randint(0, len(x_test))
-        y_p = predict(x_test['clean_x'].values[random_pos])
+        y_p = predict(overview=x_test['clean_x'].values[random_pos], multilabel_binarizer=mb, classifier=clf,
+                      tfidf_vect=tfidf_vect)
         print("Title : ",x_test['title_not_modified'].values[random_pos], x_test['clean_x'].values[random_pos])
         print('Predicted : ', y_p[0])
         print('Actual :', mb.inverse_transform(y_test)[random_pos])
         print("__________________________________________________")
     if visu:
-        print('SCORE ',f1score)
+        print('F1 SCORE ',f1score)
+        print("Hamming SCORE ", eval1)
+        print("Vrais positifs score ", eval2)
+def evaluation1(y_test, y_pred):
+    score = 0
+    for pair in zip(y_test, y_pred):
+        cur_score = 0
+        for i in range(len(pair[0])):
+            if pair[0][i] == pair[1][i]:
+                cur_score+=1
+        score += cur_score / len(pair[0])
+    return score / len(y_test)
+
+def evaluation2(y_test, y_pred):
+    score = 0
+    for pair in zip(y_test, y_pred):
+        cur_score = 0
+        cur_div = 0
+        for i in range(len(pair[1])):
+            if pair[0][i] == 1 :
+                cur_div += 1
+                if pair[1][i] == 1:
+                    cur_score += 1
+        score += cur_score / cur_div
+    return score / len(y_test)
+
 if __name__=='__main__':
     prepare_data_frame_and_build_model()

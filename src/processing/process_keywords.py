@@ -23,6 +23,13 @@ def raw_small(count=1000, save=False, nameifsave="keywords_small.csv", clean=Fal
         dfs.to_csv(up.data_processed_dir + filename)
     return dfs
 
+def get_films_with_keywords(df):
+    df['keywords'].fillna('[]', inplace=True)
+    df['keywords'] = df['keywords'].apply(lambda x: ast.literal_eval(x))
+    def f(x):
+        return  " ".join([y['name'] for y in x])
+    df['keywords'] = df['keywords'].apply(f)
+    return df
 
 def get_keywords_of_film(df, id_film=1):
     if df is not None:
