@@ -30,8 +30,8 @@ import ast
 import timeit
 from sklearn.metrics.pairwise import linear_kernel
 from sklearn.metrics import accuracy_score
-nltk.download('punkt')
-nltk.download('stopwords')
+nltk.download('punkt', quiet=False)
+nltk.download('stopwords', quiet=False)
 
 seuil = 0.3
 
