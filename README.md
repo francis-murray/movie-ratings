@@ -3,13 +3,27 @@ Movie Ratings Prediction
 
 A manipulation of the Kaggle's dataset : https://www.kaggle.com/rounakbanik/the-movies-dataset
 
-Once you have cloned the projet, replace the whole /data folder with the data available right here : https://drive.google.com/drive/u/0/folders/12otrlu_Okwm9PaACE94Y67E8WtA2vaDS
+## Project Objectives
+### Business Problem
+* 80% of films lose money. How can we tell if a movie will be a success before it is released?
+* How can we recommend movies to a user depending on his taste?
 
-#TODO
--predict rating mean of movie
--predict movie revenue
--predict movie popularity
--predict movie categories
--predict if a movie is for adults
--(Optional)implement knn algorithm
--(Optional)implement tf-idf
+### Objective
+* Predict a film’s user rating with Machine Learning (find out what makes a successful film).
+* Suggest films based on what a user already likes
+
+## Getting Started
+* Clone the project
+* Replace the whole /data folder with the data available right here : https://drive.google.com/drive/u/0/folders/12otrlu_Okwm9PaACE94Y67E8WtA2vaDS
+
+## Predictions
+* Predict IMDB score
+* Predict Movie Categories
+* Suggest Movies 
+* Predict Rating Mean
+
+## Modeling algorithms used
+* Linear regression
+* Knn (k-nearest neighbor)
+* Random forest
+* Param tuning
