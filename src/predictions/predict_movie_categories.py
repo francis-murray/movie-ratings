@@ -1,7 +1,7 @@
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import f1_score
+from sklearn.metrics import f1_score, roc_auc_score
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import cross_val_score
 from sklearn.multiclass import OneVsRestClassifier
@@ -28,6 +28,7 @@ import numpy as np
 import nltk
 import ast
 import timeit
+from sklearn.metrics.pairwise import linear_kernel
 from sklearn.metrics import accuracy_score
 nltk.download('punkt')
 nltk.download('stopwords')
@@ -180,7 +181,23 @@ def prepare_data_frame(visu = True, load_raw = False, filename = "predict_movie_
         print("For example, ", labels[0], "Stands for", mb.inverse_transform(labels)[0])
     return df, mb, labels
 
+def get_nearest_films(overview="", belongs_to_collection="", original_title="", title="", tagline="", keywords="",
+                      tfidf_vect=None, tfidf_matrix=None, df=None, nb_nearest = 10):
+    x = join({
+        'overview': clean_text(overview),
+        'belongs_to_collection': belongs_to_collection.replace(' ', ''),
+        'original_title': clean_text(original_title),
+        'title': clean_text(title),
+        'tagline': clean_text(tagline),
+        'keywords': clean_text(keywords)
 
+    })
+    x_tfidf_vect = tfidf_matrix.transform([x])
+    sim_positions = linear_kernel(x_tfidf_vect, tfidf_vect).flatten().argsort()[:-nb_nearest:-1]
+    print("Nearest "+str(nb_nearest)+" films from "+title+" are : ")
+    for pos in sim_positions:
+        print(df.values[pos][1])
+    print("__________________________________________________________________")
 def predict(overview="", belongs_to_collection="", original_title="", title="", tagline="", keywords="",
             multilabel_binarizer=None, classifier=None,
             tfidf_vect=None, threshold_decision=np.vectorize(lambda t: 1 if t>seuil else 0)):
@@ -218,8 +235,12 @@ def prepare_data_frame_and_build_model(visu = True):
     threshold_decision = np.vectorize(lambda t: 1 if t>seuil else 0)
     y_pred = threshold_decision(clf.predict_proba(x_test_tf_idf))
     f1score = f1_score(y_test, y_pred, average='micro')
-    eval1 = evaluation1(y_test, y_pred)
-    eval2 = evaluation2(y_test, y_pred)
+    eval1 = hamming_score(y_test, y_pred)
+    eval2 = true_positive(y_test, y_pred)
+    eval3 = false_positive(y_test, y_pred)
+    eval4 = true_negative(y_test, y_pred)
+    eval5 = false_negative(y_test, y_pred)
+
     for i in range(10):
         random_pos = random.randint(0, len(x_test))
         y_p = predict(overview=x_test['clean_x'].values[random_pos], multilabel_binarizer=mb, classifier=clf,
@@ -228,11 +249,20 @@ def prepare_data_frame_and_build_model(visu = True):
         print('Predicted : ', y_p[0])
         print('Actual :', mb.inverse_transform(y_test)[random_pos])
         print("__________________________________________________")
+    for i in range(5):
+        random_pos = random.randint(0, len(x_test))
+        get_nearest_films(overview=x_test['clean_x'].values[random_pos], title=x_test['title_not_modified']
+                          .values[random_pos] ,tfidf_vect=x_train_tf_idf,
+                          tfidf_matrix=tfidf_vect ,df=x_train)
     if visu:
-        print('F1 SCORE ',f1score)
         print("Hamming SCORE ", eval1)
-        print("Vrais positifs score ", eval2)
-def evaluation1(y_test, y_pred):
+        print('F1 SCORE ',f1score)
+        print("Taux de vrai positifs ", eval2)
+        print("Taux de faux positifs ", eval3)
+        print("Taux de vrai négatifs ", eval4)
+        print("Taux de faux négatifs ", eval5)
+
+def hamming_score(y_test, y_pred):
     score = 0
     for pair in zip(y_test, y_pred):
         cur_score = 0
@@ -242,7 +272,7 @@ def evaluation1(y_test, y_pred):
         score += cur_score / len(pair[0])
     return score / len(y_test)
 
-def evaluation2(y_test, y_pred):
+def true_positive(y_test, y_pred):
     score = 0
     for pair in zip(y_test, y_pred):
         cur_score = 0
@@ -254,6 +284,43 @@ def evaluation2(y_test, y_pred):
                     cur_score += 1
         score += cur_score / cur_div
     return score / len(y_test)
+def false_positive(y_test, y_pred):
+    score = 0
+    for pair in zip(y_test, y_pred):
+        cur_score = 0
+        cur_div = 0
+        for i in range(len(pair[1])):
+            if pair[0][i] == 0 :
+                cur_div += 1
+                if pair[1][i] == 1:
+                    cur_score += 1
+        score += cur_score / cur_div
+    return score / len(y_test)
+def true_negative(y_test, y_pred):
+    score = 0
+    for pair in zip(y_test, y_pred):
+        cur_score = 0
+        cur_div = 0
+        for i in range(len(pair[1])):
+            if pair[0][i] == 0 :
+                cur_div += 1
+                if pair[1][i] == 0:
+                    cur_score += 1
+        score += cur_score / cur_div
+    return score / len(y_test)
+def false_negative(y_test, y_pred):
+    score = 0
+    for pair in zip(y_test, y_pred):
+        cur_score = 0
+        cur_div = 0
+        for i in range(len(pair[1])):
+            if pair[0][i] == 1 :
+                cur_div += 1
+                if pair[1][i] == 0:
+                    cur_score += 1
+        score += cur_score / cur_div
+    return score / len(y_test)
+
 
 if __name__=='__main__':
     prepare_data_frame_and_build_model()
